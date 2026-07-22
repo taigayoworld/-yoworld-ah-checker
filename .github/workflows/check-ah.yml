@@ -3,152 +3,162 @@ name: Check AH for Buy List Items
 on:
   schedule:
     - cron: '*/5 * * * *'
-  workflow_dispatch:
+  workflow_di
 
 jobs:
   check-ah:
-    runs-on: ubuntu-latest
+    runs-on:
     steps:
-      - name: Check AH for Buy List Items
+      - name:ms
         env:
-          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
-          SUPABASE_ANON_KEY: ${{ secrets.SUPABASE_ANON_KEY }}
-          DISCORD_WEBHOOK_URL: ${{ secrets.DISCORD_WEBHOOK_URL }}
+          SUPABASE_URL }}
+          SUPABASE_ANON_KEY: ${{
+secrets.SUPAB
+          DISCORD_WEBHOOK_URL: ${{
+secrets.DISCO
         run: |
-          node << 'EOF'
+          nod
           const https = require('https');
 
-          const SUPABASE_URL = process.env.SUPABASE_URL;
-          const SUPABASE_ANON_KEY = process.env.SUPABASE_ANON_KEY;
-          const DISCORD_WEBHOOK_URL = process.env.DISCORD_WEBHOOK_URL;
-          const AH_API = 'https://yoworld.net/api/v1/yoworld/auction/search';
+          const SUPABASE_URL = process.env.S
+          const SUPABASE_ANON_KEY = process.env.S
+          const DISCORD_WEBHOOK_URL =
+process.env.D
+          const AH_API =
+'https://yowotion/search';
 
-          function makeRequest(url, method = 'GET', body = null, headers = {}) {
-            return new Promise((resolve, reject) => {
+          funhod = 'GET',body = null, headers = {}) {
+            r, reject) => {
               const urlObj = new URL(url);
-              const isHttps = urlObj.protocol === 'https:';
-              const client = isHttps ? https : require('http');
+             otocol ==='https:';
+             https :require('http');
 
               const options = {
-                hostname: urlObj.hostname,
-                path: urlObj.pathname + urlObj.search,
+             me,
+                path: urlObj.pathname +
+urlObj.search
                 method: method,
-                headers: {
-                  'Content-Type': 'application/json',
-                  ...headers
-                }
-              };
 
-              if (body) {
-                options.headers['Content-Length'] = Buffer.byteLength(body);
+                  'Content-Type': 'application/json',
+
+                }
+
+
+
+                options.headers['Content-Length'] =
+Buffer.byteLe
               }
 
-              const req = client.request(options, (res) => {
+              const req = client.request(options,
+(res) => {
                 let data = '';
-                res.on('data', chunk => data += chunk);
-                res.on('end', () => {
-                  try {
-                    resolve({
-                      status: res.statusCode,
-                      body: data ? JSON.parse(data) : null
-                    });
-                  } catch (e) {
-                    resolve({
-                      status: res.statusCode,
-                      body: data
-                    });
-                  }
-                });
-              });
+              data +=chunk);
 
-              req.on('error', reject);
+                  try {
+
+                      status: res.statusCode,
+             .parse(data) : null
+
+                  } catch (e) {
+
+                      status: res.statusCode,
+
+                    });
+
+                });
+
+
+
               if (body) req.write(body);
-              req.end();
+
             });
           }
 
-          async function getBuyList() {
-            console.log('Fetching buy list...');
-            const url = `${SUPABASE_URL}/rest/v1/buy_list`;
-            const res = await makeRequest(url, 'GET', null, {
+          asySupabase() {
+            console.log('Fetching buy list from
+Supabase...')
+            const url =
+`${SUPABASE_U
+            const res = await makeRequest(url, 'GET',
+null, {
               'apikey': SUPABASE_ANON_KEY,
-              'Authorization': `Bearer ${SUPABASE_ANON_KEY}`
-            });
-
-            if (res.status !== 200) {
-              throw new Error(`Failed to fetch buy list: ${res.status}`);
+${SUPABASE_ANON_KEY}`
             }
 
-            return Array.isArray(res.body) ? res.body : [];
+            i
+              throw new Error(`Failed to fetch buy
+list: ${res.s
+            }
+
+            return Array.isArray(res.body) ? res.body
+: [];
           }
 
           async function searchAH(itemName) {
-            const body = JSON.stringify({
+            c({
               active_in_store: false,
+
               sort: 0,
-              start: 0,
+
               item_name: itemName
-            });
-
-            const res = await makeRequest(AH_API, 'PUT', body);
-
-            if (res.status !== 200) {
-              console.warn(`AH search failed for "${itemName}": ${res.status}`);
-              return null;
             }
 
-            return res.body;
+            cst(AH_API,'PUT', body, {
+             ttpRequest'
+            });
+
+            if (res.status !== 200) {
+             ailed for"${itemName}": ${res.status}`);
+
+            }
+
+            return res.body?.results || [];
           }
 
-          async function sendDiscordNotification(messages) {
-            if (!DISCORD_WEBHOOK_URL || messages.length === 0) {
-              return;
+          asysendDiscordNotification(messages) {
+            imessages.length === 0) {
+
             }
 
             const content = messages.join('\n');
-            const body = JSON.stringify({ content });
+            c({ content });
 
-            const res = await makeRequest(DISCORD_WEBHOOK_URL, 'POST', body);
+            cmakeRequest(DISCORD_WEBHOOK_URL, 'POST', body);
 
             if (res.status !== 204 && res.status !== 200) {
-              console.warn(`Failed to send Discord notification: ${res.status}`);
+              console.warn(`Failed to send Discord
+notification:
+            } else {
+             ficationsent');
             }
           }
 
           async function main() {
-            try {
-              const buyList = await getBuyList();
-              console.log(`Found ${buyList.length} items in buy list`);
-
-              if (buyList.length === 0) {
-                return;
+            t
+              const buyList = await   getBuyListFro
+              console.log(`Found ${buyitems in buy
+                                                    {
+                console.log('No items 
+              }                       
+              const messages = [];    
+              for (const item of buyLi${item.item_name}`);                  
+                const results = await searchAH(item
+                const matches = results.filter(r => String(r.itemid));
+                                                   {
+                  const listing = mat             .price_cash >0                                                 cash} cash`
+                    : `${listing.pric             .item_name} is listed on the Auction House for ${pri${item.item_name}`);                 
+                                                  ve =>setTimeout(resolve, 1000));          
+                                                  {
+                console.log(`Sending ${messages.leiscord`);
+                await sendDiscordNo
+              } else {
+             ound in AH');
               }
-
-              const messages = [];
-
-              for (const item of buyList) {
-                console.log(`Checking: ${item.item_name}`);
-
-                const ahResults = await searchAH(item.item_name);
-
-                if (ahResults && ahResults.listings && ahResults.listings.length > 0) {
-                  const listing = ahResults.listings[0];
-                  const price = listing.price_cash > 0 ? `${listing.price_cash} cash` : `${listing.price} coins`;
-                  messages.push(`${item.item_name} is listed on the Auction House for ${price}`);
-                }
-
-                await new Promise(resolve => setTimeout(resolve, 1000));
-              }
-
-              if (messages.length > 0) {
-                console.log(`Sending ${messages.length} message(s) to Discord`);
-                await sendDiscordNotification(messages);
-              }
-            } catch (error) {
+            }
               console.error('Error:', error.message);
-              process.exit(1);
+
             }
           }
 
-          main();
+          mai
           EOF
