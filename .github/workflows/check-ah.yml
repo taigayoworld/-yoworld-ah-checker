@@ -179,9 +179,9 @@ jobs:
 
                 if (matches.length > 0 && !notifiedIds.has(String(item.item_id))) {
                   const listing = matches[0];
-                  const price = listing.price_cash > 0 
-                    ? `${listing.price_cash} cash` 
-                    : `${listing.price} coins`;
+                  const price = listing.currency === 1 
+                    ? `${listing.avg_price} coins` 
+                    : `${listing.avg_price_cash} cash`;
                   messages.push(`${item.item_name} is listed on the Auction House for ${price}`);
                   console.log(`NEW: ${item.item_name}`);
                   
