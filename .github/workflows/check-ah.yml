@@ -82,6 +82,43 @@ jobs:
             return Array.isArray(res.body) ? res.body : [];
           }
 
+          async function getNotifiedItems() {
+            console.log('Fetching notified items...');
+            const url = `${SUPABASE_URL}/rest/v1/ah_checker_notified`;
+            const res = await makeRequest(url, 'GET', null, {
+              'apikey': SUPABASE_ANON_KEY,
+              'Authorization': `Bearer ${SUPABASE_ANON_KEY}`
+            });
+
+            if (res.status !== 200) {
+              console.warn(`Failed to fetch notified items: ${res.status}`);
+              return [];
+            }
+
+            return Array.isArray(res.body) ? res.body : [];
+          }
+
+          async function addNotifiedItem(itemId, itemName) {
+            try {
+              const res = await makeRequest(`${SUPABASE_URL}/rest/v1/ah_checker_notified`, 'POST', 
+                JSON.stringify({
+                  item_id: String(itemId),
+                  item_name: itemName
+                }),
+                {
+                  'apikey': SUPABASE_ANON_KEY,
+                  'Authorization': `Bearer ${SUPABASE_ANON_KEY}`,
+                  'Prefer': 'resolution=merge-duplicates,return=minimal'
+                }
+              );
+              if (!res.ok) {
+                console.warn(`Failed to add notified item: ${res.status}`);
+              }
+            } catch (e) {
+              console.warn(`Error adding notified item: ${e.message}`);
+            }
+          }
+
           async function searchAH(itemName) {
             const body = JSON.stringify({
               active_in_store: false,
@@ -130,6 +167,8 @@ jobs:
                 return;
               }
 
+              const notifiedItems = await getNotifiedItems();
+              const notifiedIds = new Set(notifiedItems.map(n => String(n.item_id)));
               const messages = [];
 
               for (const item of buyList) {
@@ -138,13 +177,19 @@ jobs:
                 const results = await searchAH(item.item_name);
                 const matches = results.filter(r => String(r.item_id) === String(item.item_id));
 
-                if (matches.length > 0) {
+                if (matches.length > 0 && !notifiedIds.has(String(item.item_id))) {
                   const listing = matches[0];
                   const price = listing.price_cash > 0 
                     ? `${listing.price_cash} cash` 
                     : `${listing.price} coins`;
                   messages.push(`${item.item_name} is listed on the Auction House for ${price}`);
-                  console.log(`Found: ${item.item_name}`);
+                  console.log(`NEW: ${item.item_name}`);
+                  
+                  await addNotifiedItem(item.item_id, item.item_name);
+                } else if (matches.length > 0) {
+                  console.log(`Already notified: ${item.item_name}`);
+                } else {
+                  console.log(`Not listed: ${item.item_name}`);
                 }
 
                 await new Promise(resolve => setTimeout(resolve, 1000));
@@ -154,7 +199,7 @@ jobs:
                 console.log(`Sending ${messages.length} notification(s) to Discord`);
                 await sendDiscordNotification(messages);
               } else {
-                console.log('No items found in AH');
+                console.log('No new items to notify');
               }
             } catch (error) {
               console.error('Error:', error.message);
