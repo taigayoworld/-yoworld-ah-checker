@@ -111,7 +111,7 @@ jobs:
                   'Prefer': 'resolution=merge-duplicates,return=minimal'
                 }
               );
-              if (!res.ok) {
+              if (res.status >= 400) {
                 console.warn(`Failed to add notified item: ${res.status}`);
               }
             } catch (e) {
