@@ -140,6 +140,19 @@ jobs:
             return res.body?.results || [];
           }
 
+          function formatCoinsShort(n) {
+            if (n === null || n === undefined) return "—";
+            if (n >= 1_000_000) {
+              const v = n / 1_000_000;
+              return (Number.isInteger(v) ? v : v.toFixed(1)) + "m";
+            }
+            if (n >= 1000) {
+              const v = n / 1000;
+              return (Number.isInteger(v) ? v : v.toFixed(1)) + "k";
+            }
+            return String(n);
+          }
+
           async function sendDiscordNotification(items) {
             if (!DISCORD_WEBHOOK_URL || items.length === 0) {
               return;
@@ -203,8 +216,8 @@ jobs:
                   const listing = matches[0];
                   console.log('Listing object:', JSON.stringify(listing, null, 2));
                   const price = listing.currency === 1 
-                    ? `${listing.avg_price} coins` 
-                    : `${listing.avg_price_cash} cash`;
+                    ? `${formatCoinsShort(listing.avg_price)} coins` 
+                    : `${formatCoinsShort(listing.avg_price_cash)} cash`;
                   items.push({
                     name: item.item_name,
                     price: price,
