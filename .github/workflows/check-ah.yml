@@ -160,25 +160,20 @@ jobs:
 
             for (const item of items) {
               const embed = {
-                title: `✨ ${item.name} ✨`,
-                description: `🛍️ Listed on the Auction House!`,
+                title: `✨ ${item.name}`,
                 color: 15418783,
                 fields: [
                   {
                     name: '💰 Price',
-                    value: item.price,
+                    value: `${item.price} ${item.priceChange}`,
                     inline: true
                   },
                   {
-                    name: '🔑 Item ID',
-                    value: item.itemId,
+                    name: '⏱️ Time Remaining',
+                    value: item.timeRemaining,
                     inline: true
                   }
-                ],
-                timestamp: new Date().toISOString(),
-                footer: {
-                  text: '🎉 New listing found!'
-                }
+                ]
               };
 
               const body = JSON.stringify({ embeds: [embed] });
@@ -215,12 +210,27 @@ jobs:
                 if (matches.length > 0 && !notifiedIds.has(String(item.item_id))) {
                   const listing = matches[0];
                   console.log('Listing object:', JSON.stringify(listing, null, 2));
+                  
+                  const avg = listing.currency === 1 ? listing.avg_price : listing.avg_price_cash;
                   const price = listing.currency === 1 
-                    ? `${formatCoinsShort(listing.avg_price)} coins` 
-                    : `${formatCoinsShort(listing.avg_price_cash)} cash`;
+                    ? `${formatCoinsShort(listing.cur_bid_amount)} coins` 
+                    : `${formatCoinsShort(listing.cur_bid_amount)} cash`;
+                  
+                  const pct = Math.round(Math.abs(listing.cur_bid_amount - avg) / avg * 100);
+                  const priceChange = listing.cur_bid_amount <= avg ? `📉 ${pct}% lower` : `📈 ${pct}% higher`;
+                  
+                  const endDate = new Date(listing.end_date);
+                  const now = new Date();
+                  const msRemaining = endDate - now;
+                  const hoursRemaining = Math.floor(msRemaining / (1000 * 60 * 60));
+                  const minutesRemaining = Math.floor((msRemaining % (1000 * 60 * 60)) / (1000 * 60));
+                  const timeRemaining = `${hoursRemaining}h ${minutesRemaining}m`;
+                  
                   items.push({
                     name: item.item_name,
                     price: price,
+                    priceChange: priceChange,
+                    timeRemaining: timeRemaining,
                     itemId: item.item_id
                   });
                   console.log(`NEW: ${item.item_name}`);
