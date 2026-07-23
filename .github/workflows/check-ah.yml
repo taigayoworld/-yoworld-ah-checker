@@ -159,21 +159,21 @@ jobs:
             }
 
             for (const item of items) {
+              const isAboveAverage = item.priceChange.includes('higher');
+              const embedColor = isAboveAverage ? 15158332 : 3066993;
+              const priceIcon = item.isCash ? '💸' : '💰';
+              
+              const idStr = String(item.itemId).padStart(5, '0');
+              const thumbnailUrl = `https://yw-web.yoworld.com/cdn/items/${idStr.slice(0,2)}/${idStr.slice(2,4)}/${idStr}/${idStr}.png`;
+              
               const embed = {
                 title: `✨ ${item.name}`,
-                color: 15418783,
-                fields: [
-                  {
-                    name: '💰 Price',
-                    value: `${item.price} ${item.priceChange}`,
-                    inline: true
-                  },
-                  {
-                    name: '⏱️ Time Remaining',
-                    value: item.timeRemaining,
-                    inline: true
-                  }
-                ]
+                color: embedColor,
+                description: `${priceIcon} ${item.price} ${item.priceChange}`,
+                thumbnail: {
+                  url: thumbnailUrl
+                },
+                fields: []
               };
 
               const body = JSON.stringify({ embeds: [embed] });
@@ -219,18 +219,11 @@ jobs:
                   const pct = Math.round(Math.abs(listing.cur_bid_amount - avg) / avg * 100);
                   const priceChange = listing.cur_bid_amount <= avg ? `📉 ${pct}% lower` : `📈 ${pct}% higher`;
                   
-                  const endDate = new Date(listing.end_date);
-                  const now = new Date();
-                  const msRemaining = endDate - now;
-                  const hoursRemaining = Math.floor(msRemaining / (1000 * 60 * 60));
-                  const minutesRemaining = Math.floor((msRemaining % (1000 * 60 * 60)) / (1000 * 60));
-                  const timeRemaining = `${hoursRemaining}h ${minutesRemaining}m`;
-                  
                   items.push({
                     name: item.item_name,
                     price: price,
                     priceChange: priceChange,
-                    timeRemaining: timeRemaining,
+                    isCash: listing.currency !== 1,
                     itemId: item.item_id
                   });
                   console.log(`NEW: ${item.item_name}`);
