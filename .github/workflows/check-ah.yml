@@ -140,20 +140,42 @@ jobs:
             return res.body?.results || [];
           }
 
-          async function sendDiscordNotification(messages) {
-            if (!DISCORD_WEBHOOK_URL || messages.length === 0) {
+          async function sendDiscordNotification(items) {
+            if (!DISCORD_WEBHOOK_URL || items.length === 0) {
               return;
             }
 
-            const content = messages.join('\n');
-            const body = JSON.stringify({ content });
+            for (const item of items) {
+              const embed = {
+                title: `✨ ${item.name} ✨`,
+                description: `🛍️ Listed on the Auction House!`,
+                color: 15418783,
+                fields: [
+                  {
+                    name: '💰 Price',
+                    value: item.price,
+                    inline: true
+                  },
+                  {
+                    name: '🔑 Item ID',
+                    value: item.itemId,
+                    inline: true
+                  }
+                ],
+                timestamp: new Date().toISOString(),
+                footer: {
+                  text: '🎉 New listing found!'
+                }
+              };
 
-            const res = await makeRequest(DISCORD_WEBHOOK_URL, 'POST', body);
+              const body = JSON.stringify({ embeds: [embed] });
+              const res = await makeRequest(DISCORD_WEBHOOK_URL, 'POST', body);
 
-            if (res.status !== 204 && res.status !== 200) {
-              console.warn(`Failed to send Discord notification: ${res.status}`);
-            } else {
-              console.log('Discord notification sent');
+              if (res.status !== 204 && res.status !== 200) {
+                console.warn(`Failed to send Discord notification: ${res.status}`);
+              } else {
+                console.log(`Discord notification sent for ${item.name}`);
+              }
             }
           }
 
@@ -169,7 +191,7 @@ jobs:
 
               const notifiedItems = await getNotifiedItems();
               const notifiedIds = new Set(notifiedItems.map(n => String(n.item_id)));
-              const messages = [];
+              const items = [];
 
               for (const item of buyList) {
                 console.log(`Checking: ${item.item_name}`);
@@ -179,10 +201,15 @@ jobs:
 
                 if (matches.length > 0 && !notifiedIds.has(String(item.item_id))) {
                   const listing = matches[0];
+                  console.log('Listing object:', JSON.stringify(listing, null, 2));
                   const price = listing.currency === 1 
                     ? `${listing.avg_price} coins` 
                     : `${listing.avg_price_cash} cash`;
-                  messages.push(`${item.item_name} is listed on the Auction House for ${price}`);
+                  items.push({
+                    name: item.item_name,
+                    price: price,
+                    itemId: item.item_id
+                  });
                   console.log(`NEW: ${item.item_name}`);
                   
                   await addNotifiedItem(item.item_id, item.item_name);
@@ -195,9 +222,9 @@ jobs:
                 await new Promise(resolve => setTimeout(resolve, 1000));
               }
 
-              if (messages.length > 0) {
-                console.log(`Sending ${messages.length} notification(s) to Discord`);
-                await sendDiscordNotification(messages);
+              if (items.length > 0) {
+                console.log(`Sending ${items.length} notification(s) to Discord`);
+                await sendDiscordNotification(items);
               } else {
                 console.log('No new items to notify');
               }
